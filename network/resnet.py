@@ -2,11 +2,12 @@ import torch.nn as nn
 import math
 import torch.utils.model_zoo as model_zoo
 
-__all__ = ['ResNet', 'resnet34', 'resnet101']
+__all__ = ['ResNet', 'resnet34', 'resnet101', 'resnet50']
 
 model_urls = {
     'resnet34': 'https://download.pytorch.org/models/resnet34-333f7ec4.pth',
     'resnet101': 'https://download.pytorch.org/models/resnet101-5d3b4d8f.pth',
+    'resnet50': ''
 }
 
 
@@ -147,15 +148,22 @@ class ResNet(nn.Module):
         return x
 
 
-def resnet34(pretrained=False, modelpath='./models',**kwargs):
+def resnet34(pretrained=False, modelpath='./models/resnet34',**kwargs):
     model = ResNet(BasicBlock, [3, 4, 6, 3], **kwargs)
     if pretrained:
         model.load_state_dict(model_zoo.load_url(model_urls['resnet34'], model_dir=modelpath))
     return model
 
 
-def resnet101(pretrained=False, modelpath='./models', **kwargs):
+def resnet101(pretrained=False, modelpath='./models/resnet101', **kwargs):
     model = ResNet(Bottleneck, [3, 4, 23, 3], **kwargs)
     if pretrained:
         model.load_state_dict(model_zoo.load_url(model_urls['resnet101'], model_dir=modelpath))
+    return model
+
+
+def resnet50(pretrained=False, modelpath='./models/resnet50', **kwargs):
+    model = ResNet(Bottleneck, [3, 4, 6, 3], **kwargs)
+    if pretrained:
+        model.load_state_dict(model_zoo.load_url(model_urls['resnet50'], model_dir=modelpath))
     return model
