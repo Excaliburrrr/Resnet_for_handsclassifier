@@ -43,7 +43,7 @@ class Trainer(object):
 
     TrainParams = TrainParams
 
-    def __init__(self, model, train_params, train_data, val_data=None):
+    def __init__(self, model, train_params, train_data, cur_epoch=0,val_data=None):
         assert isinstance(train_params, TrainParams)
         self.params = train_params
 
@@ -52,7 +52,7 @@ class Trainer(object):
         self.val_data = val_data
 
         # criterion and Optimizer and learning rate
-        self.last_epoch = 0
+        self.last_epoch = cur_epoch
         self.criterion = self.params.criterion
         self.optimizer = self.params.optimizer
         self.lr_scheduler = self.params.lr_scheduler
@@ -69,9 +69,9 @@ class Trainer(object):
             os.makedirs(self.params.save_dir)
 
         ckpt = self.params.ckpt
-        if ckpt is not None:
-            self._load_ckpt(ckpt)
-            logger.info('Load ckpt from {}'.format(ckpt))
+      #  if ckpt is not None:
+       #     self._load_ckpt(ckpt)
+        #    logger.info('Load ckpt from {}'.format(ckpt))
 
         # meters
         self.loss_meter = meter.AverageValueMeter()
@@ -85,7 +85,13 @@ class Trainer(object):
             logger.info('Set CUDA_VISIBLE_DEVICES to {}...'.format(gpus))
             self.model = nn.DataParallel(self.model, device_ids=self.params.gpus)
             self.model = self.model.cuda()
-
+            if ckpt is not None:
+                self._load_ckpt(ckpt)
+                logger.info('Load ckpt from {}'.format(ckpt))
+        else:
+            if ckpt is not None:
+                self._load_ckpt(ckpt)
+                logger.info('Load ckpt from {}'.format(ckpt))   
         self.model.train()
 
     def train(self):
@@ -100,7 +106,7 @@ class Trainer(object):
             logger.info('Start training epoch {}'.format(self.last_epoch))
 
             self._train_one_epoch()
-
+            logger.info('The loss is {:.3f}'.format(self.loss_meter.value()[0]))
             # save model
             if (self.last_epoch % self.params.save_freq_epoch == 0) or (self.last_epoch == self.params.max_epoch - 1):
                 save_name = self.params.save_dir + 'ckpt_epoch_{}.pth'.format(self.last_epoch)
@@ -111,6 +117,7 @@ class Trainer(object):
             if self.loss_meter.value()[0] < best_loss:
                 logger.info('Found a better ckpt ({:.3f} -> {:.3f}), '.format(best_loss, self.loss_meter.value()[0]))
                 best_loss = self.loss_meter.value()[0]
+
 
             # visualize
             vis.plot('loss', self.loss_meter.value()[0])
@@ -145,7 +152,7 @@ class Trainer(object):
             self.optimizer.step(None)
 
             # meters update
-            self.loss_meter.add(loss.data[0])
+            self.loss_meter.add(loss.item())
             self.confusion_matrix.add(score.data, target.data)
 
     def _val_one_epoch(self):
